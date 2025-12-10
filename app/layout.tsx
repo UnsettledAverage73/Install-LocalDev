@@ -11,7 +11,6 @@ export const metadata: Metadata = {
   title: "LocalDev + AI - One-Line Install",
   description:
     "Install LocalDev and Ollama with all models pre-loaded in one command. Works on macOS, Linux, and Windows.",
-  generator: "v0.app",
   icons: {
     icon: [
       {
