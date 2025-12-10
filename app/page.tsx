@@ -128,7 +128,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <p className="text-sm text-gray-500">LocalDev • Bringing AI development to your machine</p>
           <a
-            href="https://github.com/yourorg/localdev"
+            href="https://github.com/UnsettledAverage73/Locally-AI-Integrated-IDE"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 text-gray-400 hover:text-cyan-400 transition-colors"
