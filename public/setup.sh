@@ -1,195 +1,67 @@
 #!/bin/bash
 
-# LocalDev + Ollama Universal Setup Script
-# Detects OS and installs LocalDev with Ollama and pre-loaded models
+# --- CONFIGURATION ---
+APP_URL="https://github.com/UnsettledAverage73/Locally-AI-Integrated-IDE/releases/download/v.1.0.0/LocalDev-1.0.0.AppImage"
+INSTALL_DIR="$HOME/LocalDev"
+APP_NAME="LocalDev.AppImage"
+MODELS=("llama3" "nomic-embed-text" "deepseek-coder")
 
-set -e
-
-# Color codes for output
-RED='\033[0;31m'
+# Colors
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-# Helper functions
-print_success() {
-  echo -e "${GREEN}✓ $1${NC}"
-}
+echo -e "${BLUE}🚀 Starting LocalDev AI IDE Installation...${NC}"
 
-print_error() {
-  echo -e "${RED}✗ $1${NC}"
-}
-
-print_info() {
-  echo -e "${BLUE}ℹ $1${NC}"
-}
-
-print_warning() {
-  echo -e "${YELLOW}⚠ $1${NC}"
-}
-
-# Header
-echo -e "${BLUE}"
-echo "╔════════════════════════════════════════╗"
-echo "║   LocalDev + Ollama Setup Script      ║"
-echo "║   Universal Installer                 ║"
-echo "╚════════════════════════════════════════╝"
-echo -e "${NC}"
-
-# Step 1: Detect OS
-print_info "Detecting operating system..."
-OS_TYPE="unknown"
-if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-  OS_TYPE="linux"
-  DISTRO="unknown"
-  if [ -f /etc/os-release ]; then
-    . /etc/os-release
-    if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
-      DISTRO="debian"
-    elif [[ "$ID" == "fedora" ]]; then
-      DISTRO="fedora"
-    elif [[ "$ID" == "arch" ]]; then
-      DISTRO="arch"
-    fi
-  fi
-  print_success "Detected: Linux ($DISTRO)"
-elif [[ "$OSTYPE" == "darwin"* ]]; then
-  OS_TYPE="macos"
-  print_success "Detected: macOS"
+# 1. Download AppImage
+echo -e "${BLUE}⬇️  Downloading LocalDev AppImage...${NC}"
+mkdir -p "$INSTALL_DIR"
+if curl -L "$APP_URL" -o "$INSTALL_DIR/$APP_NAME"; then
+    chmod +x "$INSTALL_DIR/$APP_NAME"
+    echo -e "${GREEN}✅ AppImage Downloaded to $INSTALL_DIR/$APP_NAME${NC}"
 else
-  print_error "Unsupported OS: $OSTYPE"
-  exit 1
-fi
-
-# Step 2: Check prerequisites
-print_info "Checking prerequisites..."
-
-# Check for curl
-if ! command -v curl &> /dev/null; then
-  print_warning "curl not found. Attempting to install..."
-  if [[ "$OS_TYPE" == "linux" ]]; then
-    if [[ "$DISTRO" == "debian" ]]; then
-      sudo apt-get update && sudo apt-get install -y curl
-    elif [[ "$DISTRO" == "fedora" ]]; then
-      sudo dnf install -y curl
-    elif [[ "$DISTRO" == "arch" ]]; then
-      sudo pacman -S --noconfirm curl
-    fi
-  elif [[ "$OS_TYPE" == "macos" ]]; then
-    print_error "curl is required but not found. Please install Xcode Command Line Tools: xcode-select --install"
+    echo -e "${RED}❌ Failed to download AppImage. Check your internet connection.${NC}"
     exit 1
-  fi
 fi
-print_success "curl is available"
 
-# Check for git
-if ! command -v git &> /dev/null; then
-  print_warning "git not found. Attempting to install..."
-  if [[ "$OS_TYPE" == "linux" ]]; then
-    if [[ "$DISTRO" == "debian" ]]; then
-      sudo apt-get update && sudo apt-get install -y git
-    elif [[ "$DISTRO" == "fedora" ]]; then
-      sudo dnf install -y git
-    elif [[ "$DISTRO" == "arch" ]]; then
-      sudo pacman -S --noconfirm git
-    fi
-  elif [[ "$OS_TYPE" == "macos" ]]; then
-    print_error "git is required but not found. Please install Xcode Command Line Tools: xcode-select --install"
-    exit 1
-  fi
-fi
-print_success "git is available"
-
-# Step 3: Install Ollama
-print_info "Installing Ollama..."
-if command -v ollama &> /dev/null; then
-  print_success "Ollama is already installed"
+# 2. Install Ollama (if missing)
+if ! command -v ollama &> /dev/null; then
+    echo -e "${BLUE}🦙 Ollama not found. Installing...${NC}"
+    curl -fsSL https://ollama.com/install.sh | sh
 else
-  if [[ "$OS_TYPE" == "macos" ]]; then
-    # macOS installation
-    if ! command -v brew &> /dev/null; then
-      print_info "Installing Homebrew..."
-      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    fi
-    brew install ollama
-  else
-    # Linux installation
-    curl -fsSL https://ollama.ai/install.sh | sh
-  fi
-
-  # Verify installation
-  if command -v ollama &> /dev/null; then
-    print_success "Ollama installed successfully"
-  else
-    print_error "Ollama installation failed"
-    exit 1
-  fi
+    echo -e "${GREEN}✅ Ollama is already installed.${NC}"
 fi
 
-# Step 4: Start Ollama service
-print_info "Starting Ollama service..."
-if [[ "$OS_TYPE" == "macos" ]]; then
-  # macOS
-  if ! pgrep -x "ollama" > /dev/null; then
-    ollama serve &
-    sleep 3
-  fi
-elif [[ "$OS_TYPE" == "linux" ]]; then
-  # Linux - use systemctl if available
-  if command -v systemctl &> /dev/null; then
-    sudo systemctl start ollama || true
-    sleep 2
-  else
-    # Fallback to running ollama serve in background
-    if ! pgrep -x "ollama" > /dev/null; then
-      ollama serve &
-      sleep 3
-    fi
-  fi
-fi
-
-# Check if Ollama is running
-if pgrep -x "ollama" > /dev/null; then
-  print_success "Ollama service is running"
+# 3. Start Ollama Service
+echo -e "${BLUE}🔌 Checking Ollama Service...${NC}"
+# Check if running, if not start it in background
+if ! pgrep -x "ollama" > /dev/null; then
+    echo "   Starting Ollama server..."
+    ollama serve > /dev/null 2>&1 &
+    # Wait for server to wake up
+    echo "   Waiting for AI engine to initialize..."
+    sleep 5
 else
-  print_warning "Could not verify Ollama service. It may start automatically."
+    echo -e "${GREEN}✅ Ollama is running.${NC}"
 fi
 
-# Step 5: Pull required models
-print_info "Pulling AI models (this may take a few minutes)..."
+# 4. Pull AI Models
+echo -e "${BLUE}🧠 Downloading AI Brains (This may take a few minutes)...${NC}"
+for model in "${MODELS[@]}"; do
+    echo -e "   ⬇️  Pulling model: $model..."
+    ollama pull "$model"
+done
 
-print_info "Pulling llama3..."
-ollama pull llama3
-print_success "llama3 model loaded"
+# 5. Finalize
+echo -e "\n${GREEN}🎉 Installation Complete!${NC}"
+echo -e "To start the app, run:"
+echo -e "${BLUE}$INSTALL_DIR/$APP_NAME${NC}"
+echo -e "\n(You can also double-click the AppImage file in your $INSTALL_DIR folder)"
 
-print_info "Pulling nomic-embed-text..."
-ollama pull nomic-embed-text
-print_success "nomic-embed-text model loaded"
-
-# Step 6: Verify setup
-print_info "Verifying installation..."
-sleep 2
-if curl -s http://localhost:11434/api/tags &> /dev/null; then
-  print_success "Ollama API is responding correctly"
-else
-  print_warning "Ollama API not responding on localhost:11434"
+# Optional: Run it immediately
+read -p "Do you want to launch LocalDev now? (y/n) " -n 1 -r
+echo
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    "$INSTALL_DIR/$APP_NAME" &
 fi
-
-# Final message
-echo ""
-echo -e "${GREEN}╔════════════════════════════════════════╗${NC}"
-echo -e "${GREEN}║   Installation Complete!              ║${NC}"
-echo -e "${GREEN}╚════════════════════════════════════════╝${NC}"
-echo ""
-print_success "LocalDev + Ollama setup is ready!"
-echo ""
-echo -e "${BLUE}Next steps:${NC}"
-echo "  • Ollama is running on http://localhost:11434"
-echo "  • Models available: llama3, nomic-embed-text"
-echo "  • Test with: ollama run llama3 \"Hello\""
-echo ""
-echo -e "${BLUE}Documentation:${NC}"
-echo "  • Ollama Docs: https://github.com/ollama/ollama"
-echo "  • API Docs: http://localhost:11434/api"
-echo ""
