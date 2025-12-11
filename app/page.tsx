@@ -24,7 +24,7 @@ export default function Home() {
 
   const commands = {
     mac: "curl -fsSL https://your-site.com/setup.sh | sh",
-    linux: "curl -fsSL https://your-site.com/setup.sh | sh",
+    linux: "curl -fsSL https://localdevide.vercel.app/setup.sh | sh",
     windows: "iwr -useb https://your-site.com/setup.ps1 | iex",
   }
 
